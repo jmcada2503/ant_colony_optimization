@@ -78,11 +78,6 @@ def ant_colony_optimization(
             c='g', linestyle='-', linewidth=2, marker='o'
         )
 
-    # plt.plot(
-    #     [points[best_path[0], 0], points[best_path[-1], 0]],
-    #     [points[best_path[0], 1], points[best_path[-1], 1]],
-    #     c='g', linestyle='-', linewidth=2, marker='o')
-
     plt.show()
 
 

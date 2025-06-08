@@ -19,7 +19,7 @@ points = np.array([
     [0.7139072, 0.07865282]
 ])
 n_ants = 10
-n_iterations = 100
+n_iterations = 10
 alpha = 1
 beta = 1
 evaporation_rate = 0.5
@@ -34,9 +34,10 @@ for _ in range(n_iterations):
     paths = []
     path_lengths = []
 
+    for _ in range(n_points-1):
     for ant in range(n_ants):
         visited = np.array([False]*n_points)
-        current_point = np.random.randint(n_points)
+        current_point = points[0]
         visited[current_point] = True
         path = [current_point]
         path_length = 0
@@ -45,7 +46,18 @@ for _ in range(n_iterations):
             unvisited = np.where(np.logical_not(visited))[0]
             probabilities = np.zeros(len(unvisited))
 
+            distances = []
+            pheromones = []
             for i, unvisited_point in enumerate(unvisited):
+                distances.append(
+                    distance(
+                        points[current_point],
+                        points[unvisited_point]
+                    )
+                )
+                pheromones.append(
+                    pheromone[current_point, unvisited_point]
+                )
                 probabilities[i] = (
                     pheromone[current_point, unvisited_point]**alpha /
                     distance(
@@ -55,6 +67,8 @@ for _ in range(n_iterations):
                 )
 
             probabilities /= np.sum(probabilities)
+            distances /= np.max(distances)
+            pheromones = np.array([float(i) for i in pheromones])
 
             next_point = np.random.choice(unvisited, p=probabilities)
             path.append(next_point)
@@ -64,6 +78,27 @@ for _ in range(n_iterations):
             )
             visited[next_point] = True
             current_point = next_point
+            plt.scatter(
+                points[unvisited][:, 0],
+                points[unvisited][:, 1],
+                s=pheromones*500,
+                c='orange', marker='o', alpha=0.3
+            )
+            plt.scatter(
+                points[unvisited][:, 0],
+                points[unvisited][:, 1],
+                s=distances*500,
+                c='blue', marker='o', alpha=0.3
+            )
+            print(f"{path=}")
+            plt.plot(
+                points[path][:, 0],
+                points[path][:, 1],
+                c='g', linestyle='-', linewidth=2, marker='o'
+            )
+            plt.xlim((0, 1))
+            plt.ylim((0, 1))
+            plt.show()
 
         paths.append(path)
         path_lengths.append(path_length)
