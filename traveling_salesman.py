@@ -85,7 +85,7 @@ points = np.random.rand(10, 2)  # Generate 10 random 2D points
 ant_colony_optimization(
     points,
     n_ants=10,
-    n_iterations=1,
+    n_iterations=100,
     alpha=1,
     beta=1,
     evaporation_rate=0.5,

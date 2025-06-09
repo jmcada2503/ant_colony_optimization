@@ -119,7 +119,7 @@ ani = animation.FuncAnimation(
     fig,
     update,  # type: ignore
     frames=len(iteration_paths),
-    interval=100,
+    interval=200,
     blit=False,
     repeat=False
 )
