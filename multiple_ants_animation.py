@@ -1,5 +1,15 @@
 import numpy as np
+import numpy.typing as ntp
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from dataclasses import dataclass
+
+
+@dataclass
+class Ant:
+    path: list[int]
+    path_length: float
+    visited: ntp.ArrayLike
 
 
 def distance(point1, point2):
@@ -19,7 +29,7 @@ points = np.array([
     [0.7139072, 0.07865282]
 ])
 n_ants = 10
-n_iterations = 10
+n_iterations = 50
 alpha = 1
 beta = 1
 evaporation_rate = 0.5
@@ -30,82 +40,56 @@ pheromone = np.ones((n_points, n_points))
 best_path = []
 best_path_length = np.inf
 
-for _ in range(n_iterations):
+iteration_paths: list[list[list[int]]] = []
+
+for iteration in range(n_iterations):
     paths = []
     path_lengths = []
 
-    for _ in range(n_points-1):
+    # Initialize the ants
+    ants = []
     for ant in range(n_ants):
         visited = np.array([False]*n_points)
-        current_point = points[0]
-        visited[current_point] = True
-        path = [current_point]
-        path_length = 0
+        visited[0] = True
+        ants.append(Ant(
+            path=[0],
+            path_length=0,
+            visited=visited
+        ))
 
-        while False in visited:
-            unvisited = np.where(np.logical_not(visited))[0]
+    for _ in range(n_points-1):
+        for ant in ants:
+            unvisited = np.where(np.logical_not(ant.visited))[0]
             probabilities = np.zeros(len(unvisited))
 
-            distances = []
-            pheromones = []
             for i, unvisited_point in enumerate(unvisited):
-                distances.append(
-                    distance(
-                        points[current_point],
-                        points[unvisited_point]
-                    )
-                )
-                pheromones.append(
-                    pheromone[current_point, unvisited_point]
-                )
                 probabilities[i] = (
-                    pheromone[current_point, unvisited_point]**alpha /
+                    pheromone[ant.path[-1], unvisited_point]**alpha /
                     distance(
-                        points[current_point],
+                        points[ant.path[-1]],
                         points[unvisited_point]
                     )**beta
                 )
 
             probabilities /= np.sum(probabilities)
-            distances /= np.max(distances)
-            pheromones = np.array([float(i) for i in pheromones])
 
             next_point = np.random.choice(unvisited, p=probabilities)
-            path.append(next_point)
-            path_length += distance(
-                points[current_point],
+            ant.path_length += distance(
+                points[ant.path[-1]],
                 points[next_point]
             )
-            visited[next_point] = True
-            current_point = next_point
-            plt.scatter(
-                points[unvisited][:, 0],
-                points[unvisited][:, 1],
-                s=pheromones*500,
-                c='orange', marker='o', alpha=0.3
-            )
-            plt.scatter(
-                points[unvisited][:, 0],
-                points[unvisited][:, 1],
-                s=distances*500,
-                c='blue', marker='o', alpha=0.3
-            )
-            print(f"{path=}")
-            plt.plot(
-                points[path][:, 0],
-                points[path][:, 1],
-                c='g', linestyle='-', linewidth=2, marker='o'
-            )
-            plt.xlim((0, 1))
-            plt.ylim((0, 1))
-            plt.show()
+            ant.path.append(next_point)
+            ant.visited[next_point] = True
 
-        paths.append(path)
-        path_lengths.append(path_length)
+        iteration_paths.append([ant.path.copy() for ant in ants])
 
-        if path_length < best_path_length:
-            best_path = path
-            best_path_length = path_length
+    for ant in ants:
+        paths.append(ant.path)
+        path_lengths.append(ant.path_length)
+
+        if ant.path_length < best_path_length:
+            best_path = ant.path
+            best_path_length = ant.path_length
 
     pheromone *= evaporation_rate
 
@@ -114,12 +98,30 @@ for _ in range(n_iterations):
             pheromone[path[i], path[i+1]] += Q/path_length
         pheromone[path[-1], path[0]] += Q/path_length
 
-best_path_points = points[best_path]
-plt.scatter(points[:, 0], points[:, 1], c='r', marker='o')
-plt.plot(
-    best_path_points[:, 0],
-    best_path_points[:, 1],
-    c='g', linestyle='-', linewidth=2, marker='o'
+
+def update(frame):
+    ax.clear()
+    # Plot all points
+    ax.scatter(points[:, 0], points[:, 1], c='red', marker='o')
+
+    # Plot each ant's path at this iteration
+    for path in iteration_paths[frame]:
+        path_coords = points[path]
+        x_coords = path_coords[:, 0]
+        y_coords = path_coords[:, 1]
+        ax.plot(x_coords, y_coords, linestyle='-', alpha=0.5)
+    ax.set_title(f"Frame {frame+1}")
+    return ax
+
+
+fig, ax = plt.subplots()
+ani = animation.FuncAnimation(
+    fig,
+    update,  # type: ignore
+    frames=len(iteration_paths),
+    interval=100,
+    blit=False,
+    repeat=False
 )
 
 plt.show()
